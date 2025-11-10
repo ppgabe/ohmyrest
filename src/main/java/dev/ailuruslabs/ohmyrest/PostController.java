@@ -1,32 +1,31 @@
 package dev.ailuruslabs.ohmyrest;
 
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
-import java.util.Comparator;
-import java.util.function.Predicate;
 
 @RestController
 @RequestMapping(value = "/api/posts", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PostController {
 
-    private final PostRepository postRepository;
+    private final PostService postService;
 
-    PostController(PostRepository postRepo) {
-        this.postRepository = postRepo;
+    PostController(PostService postService) {
+        this.postService = postService;
     }
 
     @PostMapping
-    public Mono<ResponseEntity<Post>> createPost(@RequestBody Mono<Post> newPostMono) {
-        return newPostMono.flatMap(postRepository::save)
+    public Mono<ResponseEntity<Post>> createPost(@Valid @RequestBody Mono<PostRequest> newPostRequestMono) {
+        return newPostRequestMono.flatMap(postService::createPost)
             .map(savedPost -> {
-                URI newPostURI = URI.create("/api/posts/" + savedPost.id());
+                var newPostURI = URI.create("/api/posts/" + savedPost.id());
 
                 return ResponseEntity.created(newPostURI)
                     .body(savedPost);
@@ -35,57 +34,46 @@ public class PostController {
 
     @GetMapping("/{id}")
     public Mono<ResponseEntity<Post>> getPost(@PathVariable Integer id) {
-        return postRepository.findById(id)
-            .map(post -> ResponseEntity.ok().body(post))
-            .defaultIfEmpty(ResponseEntity.notFound().build())
-            .onErrorResume(throwable -> {
-                throwable.printStackTrace();
-                return Mono.just(ResponseEntity.internalServerError().build());
-            });
+        return postService.findPostById(id)
+            .map(post -> ResponseEntity.ok().body(post));
     }
 
     @GetMapping
     public Flux<Post> getPosts(
-        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int limit,
-        @RequestParam(defaultValue = "createdAt") String sort_by
+        @RequestParam(defaultValue = "createdAt") String sort_by,
+        @RequestParam(defaultValue = "descending") String order
     ) {
-        return Mono.fromCallable(() -> switch (sort_by) {
-                case "createdAt" -> Comparator.comparing(Post::dateTime);
-                case "title" -> Comparator.comparing(Post::title);
-                default -> throw new IllegalArgumentException();
+        return Mono.fromCallable(() -> {
+                var sortField = switch (sort_by) {
+                    case "createdAt" -> "createdAt";
+                    case "title" -> "title";
+                    default -> throw new IllegalArgumentException(sort_by + " is not a recognized sort field.");
+                };
+
+                var direction = switch (order) {
+                    case "ascending" -> Sort.Direction.ASC;
+                    case "descending" -> Sort.Direction.DESC;
+                    default -> throw new IllegalArgumentException(order + " is not a recognized order direction.");
+                };
+
+                var sort = Sort.by(direction, sortField);
+
+                return PageRequest.of(page, limit, sort);
             })
-            .flatMapMany(comparator -> postRepository.findAll()
-                .sort(comparator)
-                .skip((long) (page - 1) * limit)
-                .take(limit, true)
-            )
-            .onErrorMap(IllegalArgumentException.class, e ->
-                new ResponseStatusException(HttpStatus.BAD_REQUEST)
-            )
-            .onErrorMap(e -> !(e instanceof ResponseStatusException), e ->
-                new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR)
-            );
+            .flatMapMany(postService::findPosts);
     }
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> deletePost(@PathVariable Integer id) {
-        return postRepository.findById(id)
-            .flatMap(post -> postRepository.delete(post).thenReturn(ResponseEntity.noContent().<Void>build()))
-            .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-            .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().build()));
+        return postService.deletePost(id).thenReturn(ResponseEntity.noContent().build());
     }
 
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<Post>> updatePost(@PathVariable int id, @RequestBody Mono<Post> updatedPostMono) {
-        return updatedPostMono.flatMap(updatedPost -> postRepository.findById(id)
-            .flatMap(fetchedPost -> {
-                var newPost = new Post(fetchedPost.id(), updatedPost.title(), updatedPost.content(), updatedPost.dateTime());
-                return postRepository.save(newPost);
-            })
-            .map(newPost -> ResponseEntity.ok().body(newPost))
-            .defaultIfEmpty(ResponseEntity.notFound().build())
-            .onErrorResume(t -> Mono.just(ResponseEntity.internalServerError().build()))
-        );
+    public Mono<ResponseEntity<Post>> updatePost(@PathVariable int id,
+                                                 @Valid @RequestBody Mono<PostRequest> updatedPostRequestMono) {
+        return updatedPostRequestMono.flatMap(postRequest -> postService.updatePost(id, postRequest))
+            .map(updatedPost -> ResponseEntity.ok().body(updatedPost));
     }
 }
