@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 class AuthController {
@@ -29,16 +31,10 @@ class AuthController {
 
     @PostMapping("/register")
     public Mono<ResponseEntity<AuthResponse>> registerUser(@Valid @RequestBody Mono<UserCreateRequest> userCreateRequestMono) {
-        return userCreateRequestMono.flatMap(
-                createRequest -> userService.saveUser(createRequest).zipWith(Mono.just(createRequest))
-            )
+        return userCreateRequestMono.flatMap(userService::saveUser)
             .map(
-                userTuple -> new UsernamePasswordAuthenticationToken(
-                    userTuple.getT1().username(),
-                    userTuple.getT2().password()
-                )
+                user -> new UsernamePasswordAuthenticationToken(user.username(), null, List.of())
             )
-            .flatMap(authManager::authenticate)
             .flatMap(jwtUtil::generateToken)
             .map(jwtString -> ResponseEntity.ok().body(new AuthResponse(jwtString)));
     }
