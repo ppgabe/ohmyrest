@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: ohmyrest
+
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: always
+
+security-config:
+  argon2-config:
+    salt-length: 16
+    hash-length: 32
+    parallelism: 1
+    iterations: 2
+    memory: 16384
