@@ -8,6 +8,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @Configuration
@@ -29,7 +30,7 @@ class SecurityConfig {
     }
 
     @Bean
-    public Argon2PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new Argon2PasswordEncoder(
             argon2Config.saltLength,
             argon2Config.hashLength,
