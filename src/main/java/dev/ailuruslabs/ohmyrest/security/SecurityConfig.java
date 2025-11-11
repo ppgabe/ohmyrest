@@ -1,9 +1,12 @@
 package dev.ailuruslabs.ohmyrest.security;
 
+import dev.ailuruslabs.ohmyrest.users.AppUserDetailsService;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -24,6 +27,11 @@ class SecurityConfig {
             .addFilterAfter(authWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
             .authorizeExchange(authorize -> authorize
                 .pathMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                .pathMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
+                .pathMatchers(HttpMethod.GET, "/v3/**").permitAll()
+                .pathMatchers(HttpMethod.GET, "/swagger-ui.html").permitAll()
+                .pathMatchers(HttpMethod.POST, "/api/register").permitAll()
+                .pathMatchers(HttpMethod.POST, "api/login").permitAll()
                 .anyExchange().authenticated()
             )
             .build();
@@ -38,6 +46,13 @@ class SecurityConfig {
             argon2Config.memory,
             argon2Config.iterations
         );
+    }
+
+    @Bean
+    public ReactiveAuthenticationManager reactiveAuthenticationManager(AppUserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        var authManager = new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService);
+        authManager.setPasswordEncoder(passwordEncoder);
+        return authManager;
     }
 
     public Argon2Config getArgon2Config() {

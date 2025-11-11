@@ -1,11 +1,11 @@
 package dev.ailuruslabs.ohmyrest.users;
 
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.data.relational.core.mapping.Table;
 
-import java.util.Collection;
-import java.util.List;
+import java.time.ZonedDateTime;
 
-public record User(Integer id, String username, String fullName, String email, String hashedPassword) {
+@Table("users")
+public record User(Integer id, String username, String fullName, String email, String hashedPassword,
+                   ZonedDateTime createdAt) {
 
 }

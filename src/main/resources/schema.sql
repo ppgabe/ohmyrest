@@ -9,12 +9,12 @@ CREATE TABLE posts
 
 CREATE TABLE users
 (
-    id             INT AUTO_INCREMENT PRIMARY KEY,
-    username       VARCHAR(32),
-    full_name      VARCHAR(255),
-    email          VARCHAR(64),
-    hashedPassword CHAR(32),
-    created_at     TIMESTAMP WITH TIME ZONE
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    username        VARCHAR(32),
+    full_name       VARCHAR(255),
+    email           VARCHAR(64),
+    hashed_password VARCHAR(255),
+    created_at      TIMESTAMP WITH TIME ZONE
 );
 
 ALTER TABLE posts

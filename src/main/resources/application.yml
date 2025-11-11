@@ -20,5 +20,5 @@ security-config:
     memory: 16384
 
 jwt:
-  secret: "superSecretPassword"
+  secret: "superSecretPasswordButLongerBecauseItWouldntWork"
   expiration-ms: 86400000
