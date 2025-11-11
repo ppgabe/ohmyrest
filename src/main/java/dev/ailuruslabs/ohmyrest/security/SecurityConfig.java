@@ -4,8 +4,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,13 +19,13 @@ class SecurityConfig {
     private Argon2Config argon2Config;
 
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, AuthWebFilter authWebFilter) {
         return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .addFilterAfter(authWebFilter, SecurityWebFiltersOrder.AUTHENTICATION)
             .authorizeExchange(authorize -> authorize
                 .pathMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                 .anyExchange().authenticated()
             )
-            .httpBasic(Customizer.withDefaults())
             .build();
     }
 
