@@ -5,6 +5,7 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -22,16 +23,18 @@ class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(Authentication auth) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expirationInMs);
+    public Mono<String> generateToken(Authentication auth) {
+        return Mono.fromSupplier(() -> {
+            Date now = new Date();
+            Date expiryDate = new Date(now.getTime() + expirationInMs);
 
-        return Jwts.builder()
-            .subject(auth.getName())
-            .issuedAt(now)
-            .expiration(expiryDate)
-            .signWith(key)
-            .compact();
+            return Jwts.builder()
+                .subject(auth.getName())
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
+                .compact();
+        });
     }
 
 }
