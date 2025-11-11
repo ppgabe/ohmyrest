@@ -1,5 +1,6 @@
 package dev.ailuruslabs.ohmyrest.security;
 
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,20 +8,23 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
 
 @Service
 class JwtUtil {
 
-    private final Key key;
+    private final SecretKey key;
     private final long expirationInMs;
+    private final JwtParser parser;
 
     JwtUtil(@Value("${jwt.secret}") String secret, @Value("${jwt.expiration-ms}") long expirationInMs) {
         this.expirationInMs = expirationInMs;
 
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+
+        this.parser = Jwts.parser().verifyWith(key).build();
     }
 
     public Mono<String> generateToken(Authentication auth) {
@@ -37,4 +41,11 @@ class JwtUtil {
         });
     }
 
+    public Mono<String> getUsernameFromToken(String token) {
+        return Mono.fromSupplier(() -> {
+            return parser.parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+        });
+    }
 }
