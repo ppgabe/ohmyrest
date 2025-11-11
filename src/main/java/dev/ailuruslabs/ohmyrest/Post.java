@@ -11,5 +11,6 @@ public record Post(
     String title,
     String content,
     ZonedDateTime createdAt,
-    ZonedDateTime updatedAt
+    ZonedDateTime updatedAt,
+    Integer authorId
 ) {}
