@@ -1,7 +1,9 @@
 package dev.ailuruslabs.ohmyrest.errors;
 
+import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -55,9 +57,18 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.resolve(e.getStatusCode().value()), e.getMessage());
     }
 
+    @ExceptionHandler(JwtException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleJwtException(JwtException e) {
+        return buildErrorResponse(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleUsernameNotFound(UsernameNotFoundException e) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleRuntimeException(Exception e) {
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: " + e.getMessage());
     }
-
 }
