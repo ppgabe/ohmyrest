@@ -7,11 +7,18 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import reactor.blockhound.BlockHound;
 
 @SpringBootApplication
 public class OhmyrestApplication {
 
     public static void main(String[] args) {
+        BlockHound.builder()
+            .allowBlockingCallsInside("org.springframework.core.io.ClassPathResource", "isReadable")
+            // You can add the others from the stack trace for completeness
+            .allowBlockingCallsInside("java.util.zip.ZipFile", "read")
+            .allowBlockingCallsInside("java.io.RandomAccessFile", "readBytes")
+            .install();
         SpringApplication.run(OhmyrestApplication.class, args);
     }
 
