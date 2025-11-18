@@ -12,7 +12,7 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 @Component
-class AuthWebFilter implements WebFilter {
+public class AuthWebFilter implements WebFilter {
 
     private final JwtUtil jwtUtil;
     private final AppUserDetailsService appUserDetailsService;
@@ -27,9 +27,7 @@ class AuthWebFilter implements WebFilter {
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) return chain.filter(exchange);
 
-        String token = authHeader.substring(7);
-
-        return jwtUtil.getUsernameFromToken(authHeader.replaceFirst("Bearer ", ""))
+        return jwtUtil.getUsernameFromToken(authHeader.substring(7))
             .flatMap(appUserDetailsService::findByUsername)
             .map(userDetails -> new UsernamePasswordAuthenticationToken(
                 userDetails,
