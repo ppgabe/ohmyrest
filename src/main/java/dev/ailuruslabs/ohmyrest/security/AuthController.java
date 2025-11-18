@@ -4,13 +4,17 @@ import dev.ailuruslabs.ohmyrest.users.UserCreateRequest;
 import dev.ailuruslabs.ohmyrest.users.UserLoginRequest;
 import dev.ailuruslabs.ohmyrest.users.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -49,6 +53,13 @@ class AuthController {
                 )
             )
             .flatMap(authManager::authenticate)
+            .onErrorMap(t -> switch (t) {
+                case UsernameNotFoundException unfe ->
+                    new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                case BadCredentialsException bce ->
+                    new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                default -> t;
+            })
             .flatMap(jwtUtil::generateToken)
             .map(jwtString -> ResponseEntity.ok().body(new AuthResponse(jwtString)));
     }
