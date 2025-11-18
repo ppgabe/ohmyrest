@@ -1,5 +1,6 @@
 package dev.ailuruslabs.ohmyrest.users;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,16 +31,16 @@ public class UserService {
                 // Not sure if this is the best place for this responsibility.
                 passwordEncoder.encode(request.password()),
                 ZonedDateTime.now()
-                )
-        );
+            )
+        ).onErrorMap(t -> switch (t) {
+            case DuplicateKeyException dke -> new ResponseStatusException(HttpStatus.CONFLICT, t.getMessage());
+            default -> t;
+        });
     }
 
     // user authentication somewhere here, maybe?
 
     public Mono<User> getUser(int id) {
-        return userRepository.findById(id)
-            .switchIfEmpty(Mono.error(
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "User " + id + " not found.")
-            ));
+        return userRepository.findById(id);
     }
 }
