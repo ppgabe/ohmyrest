@@ -10,9 +10,9 @@ CREATE TABLE posts
 CREATE TABLE users
 (
     id              INT AUTO_INCREMENT PRIMARY KEY,
-    username        VARCHAR(32),
+    username        VARCHAR(32) UNIQUE,
     full_name       VARCHAR(255),
-    email           VARCHAR(64),
+    email           VARCHAR(64) UNIQUE,
     hashed_password VARCHAR(255),
     created_at      TIMESTAMP WITH TIME ZONE
 );
